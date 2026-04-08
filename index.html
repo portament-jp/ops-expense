@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>オプス経費精算 - 領収書の写真を撮るだけ。あとは全部自動。</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans JP','Helvetica Neue',sans-serif;color:#1e293b;background:#fff;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid #f1f5f9;padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{display:flex;align-items:center;gap:8px}
+.nav-icon{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800}
+.nav-logo span{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.nav-links{display:flex;gap:24px;font-size:13px;color:#64748b}
+.nav-links a:hover{color:#2563eb}
+.hero{min-height:88vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 24px 60px;position:relative;overflow:hidden;background:linear-gradient(180deg,#f8faff 0%,#fff 100%)}
+.hero-bg1{position:absolute;top:-200px;right:-200px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.04) 0%,transparent 70%)}
+.hero-c{text-align:center;max-width:760px;position:relative;opacity:0;transform:translateY(24px);animation:fadeUp .8s .2s cubic-bezier(.16,1,.3,1) forwards}
+.badge{display:inline-flex;align-items:center;gap:8px;border-radius:100px;padding:6px 16px;margin-bottom:24px;font-size:12px;font-weight:600;letter-spacing:.5px}
+.badge-blue{background:#eff6ff;border:1px solid #dbeafe;color:#2563eb}
+.badge-green{background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a}
+.badge-amber{background:#fffbeb;border:1px solid #fef3c7;color:#d97706}
+.hero h1{font-size:clamp(28px,4.5vw,48px);font-weight:800;line-height:1.3;margin-bottom:20px;letter-spacing:-1px;color:#0f172a}
+.hero h1 em{font-style:normal;color:#2563eb}
+.hero-c>p{color:#64748b;font-size:clamp(14px,1.8vw,17px);line-height:1.9;margin-bottom:36px}
+.s{padding:72px 24px}.s-bg{background:#f8fafc}.s-dark{background:linear-gradient(135deg,#1e3a5f 0%,#1e40af 100%);color:#fff}
+.si{max-width:760px;margin:0 auto}
+.st{font-size:12px;color:#2563eb;letter-spacing:2px;font-weight:700;margin-bottom:8px;text-align:center}
+.s-dark .st{color:#93c5fd}
+.sh{font-size:clamp(22px,3vw,28px);font-weight:700;margin-bottom:12px;color:#0f172a;text-align:center}
+.s-dark .sh{color:#fff}
+.sd{color:#64748b;font-size:14px;text-align:center;margin-bottom:36px}
+.s-dark .sd{color:rgba(255,255,255,.6)}
+.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.cc{background:#fff;border-radius:14px;padding:24px 20px;border:1px solid #e2e8f0;transition:all .2s}
+.cc:hover{border-color:#cbd5e1;box-shadow:0 4px 16px rgba(0,0,0,.04)}
+.cc-icon{font-size:24px;margin-bottom:10px}
+.cc h3{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px}
+.cc p{font-size:12px;color:#64748b;line-height:1.7}
+
+/* Hero flow */
+.hero-flow{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:28px 0}
+.hf-box{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;text-align:center;min-width:70px;box-shadow:0 2px 8px rgba(0,0,0,.03)}
+.hf-icon{font-size:18px;margin-bottom:2px}
+.hf-label{font-size:9px;font-weight:600;color:#1e293b}
+.hf-sub{font-size:8px;color:#94a3b8}
+.hf-arrow{color:#94a3b8;font-size:14px}
+.hf-out{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe}
+.hf-out .hf-label{color:#2563eb}
+
+/* Interactive steps */
+.step-tabs{display:flex;gap:6px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
+.step-tab{padding:8px 16px;border-radius:100px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;transition:all .3s}
+.step-tab.active{border-color:#2563eb;background:#2563eb;color:#fff}
+.step-panel{display:none;animation:fadeUp .4s ease}.step-panel.active{display:block}
+.step-card{background:#fff;border-radius:16px;padding:28px 24px;border:1px solid #e2e8f0;box-shadow:0 4px 20px rgba(0,0,0,.04)}
+.step-card h3{font-size:17px;font-weight:700;margin-bottom:8px;color:#0f172a}
+.step-card>p{font-size:12px;color:#64748b;line-height:1.8;margin-bottom:16px}
+.step-detail{display:flex;gap:12px;flex-wrap:wrap}
+.step-point{flex:1 1 140px;background:#f8fafc;border:1px solid #f1f5f9;border-radius:8px;padding:12px;font-size:11px;color:#334155;line-height:1.7}
+.step-point strong{color:#2563eb;display:block;margin-bottom:2px;font-size:10px;letter-spacing:1px}
+
+/* Law section */
+.law-box{background:linear-gradient(135deg,#eff6ff,#f8faff);border:2px solid #2563eb;border-radius:16px;padding:32px 28px;position:relative;overflow:hidden}
+.law-box::before{content:'⚖';position:absolute;top:-10px;right:-10px;font-size:80px;opacity:.04}
+.law-badge{display:inline-flex;align-items:center;gap:6px;background:#2563eb;color:#fff;padding:4px 12px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:16px}
+.law-box h3{font-size:20px;font-weight:700;color:#0f172a;margin-bottom:8px}
+.law-box>p{font-size:13px;color:#64748b;line-height:1.9;margin-bottom:20px}
+.law-points{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.law-point{background:#fff;border:1px solid #dbeafe;border-radius:10px;padding:14px;display:flex;gap:8px;align-items:flex-start}
+.law-chk{width:18px;height:18px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;color:#16a34a;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+.law-point-text{font-size:11px;color:#334155;line-height:1.6}
+.law-point-text strong{display:block;color:#0f172a;font-size:12px}
+
+/* Chat tools */
+.chat-logos{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin:24px 0}
+.chat-logo{display:flex;flex-direction:column;align-items:center;gap:4px}
+.chat-box{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:1px solid #e2e8f0;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.chat-logo span{font-size:10px;color:#64748b}
+
+/* Compare table */
+table.cmp{width:100%;border-collapse:collapse;font-size:11px}
+table.cmp thead tr{border-bottom:2px solid #e2e8f0}
+table.cmp th{padding:8px;color:#94a3b8;font-weight:600}
+table.cmp td{padding:8px;border-bottom:1px solid #f1f5f9}
+table.cmp tr:nth-child(even){background:#f8fafc}
+
+/* Supplement card */
+.supp-card{background:#fffbeb;border:1px solid #fef3c7;border-radius:14px;padding:24px 20px;display:flex;gap:14px;align-items:flex-start}
+.supp-icon{font-size:28px;flex-shrink:0}
+.supp-card h3{font-size:15px;font-weight:700;color:#92400e;margin-bottom:4px}
+.supp-card p{font-size:12px;color:#a16207;line-height:1.8}
+
+/* FAQ */
+.faq-item{border-bottom:1px solid #f1f5f9;padding:18px 0}
+.faq-q{font-size:14px;font-weight:700;color:#0f172a;display:flex;align-items:center;gap:10px}
+.faq-q::before{content:'Q';font-size:10px;background:#2563eb;color:#fff;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;flex-shrink:0;font-weight:700}
+.faq-a{font-size:12px;color:#64748b;line-height:1.9;padding:10px 0 0 32px}
+
+.cta{text-align:center}
+.cta h2{font-size:22px;font-weight:700;margin-bottom:10px}
+.cta p{color:rgba(255,255,255,.6);font-size:13px;margin-bottom:24px}
+.cta-btn{display:inline-block;background:#fff;color:#1e40af;padding:12px 36px;border-radius:100px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.1);transition:all .2s}
+.cta-btn:hover{opacity:.85;transform:translateY(-1px)}
+footer{padding:24px;text-align:center;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 rgba(37,99,235,.3)}50%{box-shadow:0 0 20px rgba(37,99,235,.2)}}
+.demo-s{display:none;animation:fadeUp .4s ease}.demo-s.active{display:block}
+@media(max-width:600px){.nav-links{display:none}.hero-flow{flex-direction:column;gap:4px}.step-detail{flex-direction:column}.law-points{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="nav-logo"><div class="nav-icon">¥</div><span>オプス経費精算</span></div><div class="nav-links"><a href="#problem">課題</a><a href="#flow">仕組み</a><a href="#law">電帳法対応</a><a href="#compare">比較</a><a href="#faq">FAQ</a></div></nav>
+
+<!-- Hero -->
+<section class="hero"><div class="hero-bg1"></div>
+<div class="hero-c">
+<div class="badge badge-blue"><div style="width:6px;height:6px;border-radius:50%;background:#2563eb"></div>POWERED BY NEWCREWS</div>
+<h1>領収書の写真を撮るだけ。<br/><em>あとは全部自動。</em></h1>
+<p>LINEやChatworkに領収書を送るだけで、承認・読み取り・一覧化・保管まで全自動。<br/>電子帳簿保存法にも対応しているので、紙の領収書はもう保管不要です。</p>
+
+<div class="hero-flow">
+<div class="hf-box"><div class="hf-icon">📸</div><div class="hf-label">チャットに投稿</div><div class="hf-sub">LINE / CW / Slack</div></div>
+<div class="hf-arrow">→</div>
+<div class="hf-box"><div class="hf-icon">✅</div><div class="hf-label">承認</div><div class="hf-sub">チャット上で完結</div></div>
+<div class="hf-arrow">→</div>
+<div class="hf-box"><div class="hf-icon">🤖</div><div class="hf-label">自動読み取り</div><div class="hf-sub">金額・日付・取引先</div></div>
+<div class="hf-arrow">→</div>
+<div class="hf-box hf-out"><div class="hf-icon">📊</div><div class="hf-label">一覧化</div><div class="hf-sub">スプシ / CSV</div></div>
+<div class="hf-arrow">+</div>
+<div class="hf-box hf-out"><div class="hf-icon">📁</div><div class="hf-label">自動保管</div><div class="hf-sub">電帳法対応</div></div>
+</div>
+
+<div class="badge badge-green" style="margin-top:8px">電子帳簿保存法対応 — 紙の領収書はもう捨てて大丈夫です</div>
+</div></section>
+
+<!-- Problem -->
+<section class="s s-bg" id="problem"><div class="si">
+<div class="st">PROBLEM</div>
+<h2 class="sh">こんな経費精算に時間をかけていませんか？</h2>
+<p class="sd">毎月の経費精算、もっと楽にできます</p>
+<div class="cg">
+<div class="cc"><div class="cc-icon">📝</div><h3>領収書を手で入力している</h3><p>日付、金額、取引先……1枚ずつExcelや会計ソフトに手打ち。毎月同じ作業の繰り返し。</p></div>
+<div class="cc"><div class="cc-icon">📨</div><h3>承認フローが面倒</h3><p>申請書を印刷して上司に渡す。承認が遅れて処理が溜まる。</p></div>
+<div class="cc"><div class="cc-icon">📦</div><h3>領収書の保管場所に困る</h3><p>紙の領収書を年度ごとにファイリング。探すのに時間がかかる。保管スペースも圧迫。</p></div>
+<div class="cc"><div class="cc-icon">🔄</div><h3>会計ソフトへの転記が二度手間</h3><p>Excelで集計した後、会計ソフトにも手で入力。同じ作業を2回やっている。</p></div>
+</div></div></section>
+
+<!-- 5-Step Flow -->
+<section class="s" id="flow"><div class="si">
+<div class="st">HOW IT WORKS</div>
+<h2 class="sh">5つのステップで経費精算が完了</h2>
+<p class="sd">チャットに写真を送るところから、保管・会計連携まで全自動です</p>
+
+<div class="step-tabs">
+<button class="step-tab active" onclick="switchStep(0)">① 投稿</button>
+<button class="step-tab" onclick="switchStep(1)">② 承認</button>
+<button class="step-tab" onclick="switchStep(2)">③ 読み取り</button>
+<button class="step-tab" onclick="switchStep(3)">④ 保管</button>
+<button class="step-tab" onclick="switchStep(4)">⑤ 会計連携</button>
+</div>
+
+<div class="step-panel active" id="sp0"><div class="step-card">
+<h3>① チャットに領収書を投稿</h3>
+<p>いつも使っているLINE・Chatwork・Slackに、領収書の写真を送るだけ。専用アプリのインストールは不要です。</p>
+<div class="step-detail">
+<div class="step-point"><strong>やること</strong>領収書の写真を撮ってチャットに送る。それだけです。</div>
+<div class="step-point"><strong>立替金の場合</strong>「立替金」とメッセージを添えるだけで、自動的に立替精算として処理されます。</div>
+</div></div></div>
+
+<div class="step-panel" id="sp1"><div class="step-card">
+<h3>② チャット上で承認</h3>
+<p>投稿された領収書は、承認者のチャットに自動で通知。「はい」を押すだけで承認完了。</p>
+<div class="step-detail">
+<div class="step-point"><strong>承認する場合</strong>通知の「はい」を押すだけ。次のステップに自動で進みます。</div>
+<div class="step-point"><strong>却下する場合</strong>「いいえ」を押すと、申請者に却下の通知が自動で届きます。</div>
+</div></div></div>
+
+<div class="step-panel" id="sp2"><div class="step-card">
+<h3>③ 自動読み取り＆一覧化</h3>
+<p>承認された領収書の内容をAIが自動で読み取り。日付・金額・取引先をスプレッドシートに一覧化します。</p>
+<div class="step-detail">
+<div class="step-point"><strong>読み取り項目</strong>年月日、取引先名、金額、投稿者名を自動認識。手入力ゼロ。</div>
+<div class="step-point"><strong>出力形式</strong>Googleスプレッドシートに自動記録。会計システム投入用のCSV出力にも対応。</div>
+</div></div></div>
+
+<div class="step-panel" id="sp3"><div class="step-card">
+<h3>④ 自動リネーム＆クラウド保管</h3>
+<p>領収書PDFが「年月日_取引先_金額_投稿者」のファイル名で自動保存。電子帳簿保存法の検索要件を満たします。</p>
+<div class="step-detail">
+<div class="step-point"><strong>ファイル名の例</strong>20260401_スターバックス_580円_田中太郎.pdf</div>
+<div class="step-point"><strong>保管先</strong>Google Driveなどのクラウドフォルダに自動格納。紙の領収書はもう捨ててOKです。</div>
+</div></div></div>
+
+<div class="step-panel" id="sp4"><div class="step-card">
+<h3>⑤ 会計システムに自動登録</h3>
+<p>必要に応じて、読み取った内容をクラウド会計システムに自動で登録。二度手間がなくなります。</p>
+<div class="step-detail">
+<div class="step-point"><strong>対応可能</strong>freee、マネーフォワード、弥生などのクラウド会計ソフトと連携可能。</div>
+<div class="step-point"><strong>手入力ゼロ</strong>スプレッドシートの内容がそのまま会計システムに反映されます。</div>
+</div></div></div>
+
+</div></section>
+
+<!-- Interactive Demo -->
+<section class="s s-bg" id="demo"><div class="si">
+<div class="st">EXPERIENCE</div>
+<h2 class="sh">経費精算の流れを体験</h2>
+<p class="sd">動画で見るか、実際に操作して体験できます</p>
+
+<!-- Video / Interactive tabs -->
+<div style="display:flex;gap:6px;justify-content:center;margin-bottom:20px">
+<button class="demo-mode-btn active" onclick="switchDemoMode('video')" id="dm-video" style="padding:8px 20px;border-radius:100px;border:1px solid #2563eb;background:#2563eb;color:#fff;font-size:11px;font-weight:600;cursor:pointer;transition:all .3s">🎬 動画で見る</button>
+<button class="demo-mode-btn" onclick="switchDemoMode('interactive')" id="dm-interactive" style="padding:8px 20px;border-radius:100px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:11px;font-weight:600;cursor:pointer;transition:all .3s">🖱 自分で体験する</button>
+</div>
+
+<!-- Video panel -->
+<div id="panel-video">
+<div style="background:#000;border-radius:14px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.12)">
+<video controls playsinline style="width:100%;display:block" poster="">
+<source src="demo.mp4" type="video/mp4">
+お使いのブラウザは動画再生に対応していません。
+</video>
+</div>
+<div style="text-align:center;margin-top:12px;font-size:10px;color:#94a3b8">Chatworkでの経費精算デモ動画（実際の動作イメージ）</div>
+</div>
+
+<!-- Interactive panel -->
+<div id="panel-interactive" style="display:none">
+
+<!-- Chat tool selector -->
+<div style="display:flex;gap:6px;justify-content:center;margin-bottom:16px">
+<button class="chat-sel active" onclick="switchChat('line')" id="cs-line" style="padding:6px 14px;border-radius:6px;border:1px solid #06c755;background:#06c755;color:#fff;font-size:10px;font-weight:600;cursor:pointer;transition:all .3s">LINE</button>
+<button class="chat-sel" onclick="switchChat('cw')" id="cs-cw" style="padding:6px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:10px;font-weight:600;cursor:pointer;transition:all .3s">Chatwork</button>
+<button class="chat-sel" onclick="switchChat('slack')" id="cs-slack" style="padding:6px 14px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:10px;font-weight:600;cursor:pointer;transition:all .3s">Slack</button>
+</div>
+
+<div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.08)">
+<div style="background:#f8fafc;padding:8px 12px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:5px">
+<div style="width:8px;height:8px;border-radius:50%;background:#f87171"></div>
+<div style="width:8px;height:8px;border-radius:50%;background:#fbbf24"></div>
+<div style="width:8px;height:8px;border-radius:50%;background:#4ade80"></div>
+<div style="flex:1;background:#fff;border:1px solid #e2e8f0;border-radius:4px;padding:3px 8px;font-size:9px;color:#94a3b8;margin-left:4px">ops-expense.app</div>
+</div>
+
+<div style="padding:20px;min-height:420px">
+
+<!-- Step 1 -->
+<div class="demo-s active" id="demo-1">
+<div style="border-radius:12px;padding:16px;max-width:360px;margin:0 auto" id="chat-bg" class="chat-frame">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #ddd">
+<div id="chat-icon" style="width:32px;height:32px;border-radius:50%;background:#06c755;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700">LINE</div>
+<div><div style="font-size:12px;font-weight:700" id="chat-ch-name">経費精算チャンネル</div><div style="font-size:9px;color:#94a3b8">3人のメンバー</div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="align-self:flex-end;max-width:75%">
+<div id="chat-bubble" style="background:#06c755;color:#fff;border-radius:12px 12px 0 12px;padding:10px 14px;font-size:11px">
+<div style="margin-bottom:6px">📸</div>
+<div style="background:rgba(255,255,255,.15);border-radius:6px;padding:8px;text-align:center;margin-bottom:6px">
+<div style="font-size:20px;margin-bottom:2px">🧾</div>
+<div style="font-size:9px">receipt_photo.jpg</div>
+</div>
+タクシー代です。打ち合わせの移動で使いました。
+</div>
+<div style="text-align:right;font-size:8px;color:#94a3b8;margin-top:2px">田中 14:32</div>
+</div>
+</div>
+</div>
+<div style="text-align:center;margin-top:16px">
+<button onclick="demoNext(2)" style="background:#2563eb;color:#fff;border:none;padding:10px 28px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer">送信する →</button>
+</div>
+</div>
+
+<!-- Step 2 -->
+<div class="demo-s" id="demo-2">
+<div style="border-radius:12px;padding:16px;max-width:360px;margin:0 auto" class="chat-frame">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #ddd">
+<div id="chat-icon2" style="width:32px;height:32px;border-radius:50%;background:#06c755;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700">LINE</div>
+<div><div style="font-size:12px;font-weight:700">経費精算チャンネル</div><div style="font-size:9px;color:#94a3b8">承認リクエスト</div></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="align-self:flex-start;max-width:80%">
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px 12px 12px 0;padding:12px 14px;font-size:11px">
+<div style="font-size:9px;color:#2563eb;font-weight:600;margin-bottom:6px">🤖 経費精算ボット</div>
+<div style="font-weight:600;margin-bottom:6px">承認リクエスト</div>
+<div style="background:#f8fafc;border-radius:6px;padding:8px;margin-bottom:8px;font-size:10px;line-height:1.7">
+<div>申請者：<strong>田中太郎</strong></div>
+<div>日付：<strong>2026/04/08</strong></div>
+<div>金額：<strong>¥3,480</strong></div>
+<div>内容：<strong>タクシー代（打ち合わせ移動）</strong></div>
+</div>
+<div style="font-size:10px;color:#64748b">承認しますか？</div>
+</div>
+</div>
+</div>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+<button onclick="demoNext(3)" style="background:#16a34a;color:#fff;border:none;padding:8px 28px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer">はい（承認）</button>
+<button onclick="demoReject()" style="background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;padding:8px 20px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer">いいえ</button>
+</div>
+</div>
+</div>
+
+<!-- Reject -->
+<div class="demo-s" id="demo-reject">
+<div style="border-radius:12px;padding:16px;max-width:360px;margin:0 auto" class="chat-frame">
+<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:12px 14px;font-size:11px">
+<div style="font-size:9px;color:#dc2626;font-weight:600;margin-bottom:4px">🤖 経費精算ボット → 田中太郎</div>
+<div>申請が<strong style="color:#dc2626">却下</strong>されました。内容を確認の上、再申請してください。</div>
+</div>
+<div style="text-align:center;margin-top:12px;font-size:10px;color:#64748b">却下の場合、申請者に自動で通知が届きます</div>
+<div style="text-align:center;margin-top:8px">
+<button onclick="demoReset()" style="background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;padding:8px 20px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer">← 最初から</button>
+</div>
+</div>
+</div>
+
+<!-- Step 3 -->
+<div class="demo-s" id="demo-3">
+<div style="text-align:center;padding:20px 0" id="demo-reading">
+<div style="font-size:32px;margin-bottom:8px;animation:pulse 1.5s infinite">🤖</div>
+<div style="font-size:13px;font-weight:600;margin-bottom:4px">領収書を読み取り中...</div>
+<div style="font-size:10px;color:#94a3b8;margin-bottom:14px">AIが日付・金額・取引先を自動認識しています</div>
+<div style="height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden;max-width:300px;margin:0 auto"><div id="demo-pbar" style="height:100%;background:#2563eb;border-radius:2px;width:0%;transition:width .3s"></div></div>
+</div>
+<div style="display:none" id="demo-result3">
+<div style="font-size:11px;font-weight:600;color:#2563eb;text-align:center;margin-bottom:12px">✅ 読み取り完了</div>
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;max-width:400px;margin:0 auto">
+<div style="font-size:10px;font-weight:600;color:#94a3b8;margin-bottom:8px">スプレッドシートに自動記録</div>
+<table style="width:100%;font-size:10px;border-collapse:collapse">
+<thead><tr style="border-bottom:2px solid #e2e8f0"><th style="padding:6px;text-align:left;color:#94a3b8">年月日</th><th style="padding:6px;text-align:left;color:#94a3b8">取引先</th><th style="padding:6px;text-align:right;color:#94a3b8">金額</th><th style="padding:6px;text-align:left;color:#94a3b8">申請者</th></tr></thead>
+<tbody><tr style="background:#eff6ff"><td style="padding:6px;font-weight:600">2026/04/08</td><td style="padding:6px;font-weight:600">東京タクシー</td><td style="padding:6px;text-align:right;font-weight:600">¥3,480</td><td style="padding:6px;font-weight:600">田中太郎</td></tr></tbody>
+</table>
+</div>
+<div style="text-align:center;margin-top:12px">
+<button onclick="demoNext(4)" style="background:#2563eb;color:#fff;border:none;padding:10px 28px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer">次へ：自動保管 →</button>
+</div>
+</div>
+</div>
+
+<!-- Step 4 -->
+<div class="demo-s" id="demo-4">
+<div style="font-size:11px;font-weight:600;color:#2563eb;text-align:center;margin-bottom:12px">📁 Google Driveに自動保管</div>
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;max-width:400px;margin:0 auto">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e2e8f0">
+<div style="font-size:16px">📂</div><div style="font-size:12px;font-weight:600">経費精算 / 2026年04月</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;font-size:10px;color:#64748b"><span style="font-size:14px">📄</span>20260401_スターバックス_580円_佐藤花子.pdf</div>
+<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;font-size:10px;color:#64748b"><span style="font-size:14px">📄</span>20260405_アスクル_12800円_鈴木一郎.pdf</div>
+<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;font-size:10px;color:#1e40af;font-weight:600;animation:fadeUp .4s ease"><span style="font-size:14px">📄</span>20260408_東京タクシー_3480円_田中太郎.pdf ← NEW</div>
+</div>
+<div style="margin-top:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:8px;display:flex;gap:6px;align-items:center;font-size:9px;color:#16a34a"><span>✅</span> 電子帳簿保存法の検索要件を満たすファイル名で自動保存されました</div>
+</div>
+<div style="text-align:center;margin-top:12px">
+<button onclick="demoNext(5)" style="background:#2563eb;color:#fff;border:none;padding:10px 28px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer">次へ：会計連携 →</button>
+</div>
+</div>
+
+<!-- Step 5 -->
+<div class="demo-s" id="demo-5">
+<div style="font-size:11px;font-weight:600;color:#2563eb;text-align:center;margin-bottom:12px">📊 会計システムにも自動登録</div>
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;max-width:440px;margin:0 auto">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #e2e8f0"><div style="font-size:12px;font-weight:700">💻 会計ソフト（自動連携）</div></div>
+<table style="width:100%;font-size:9px;border-collapse:collapse">
+<thead><tr style="border-bottom:2px solid #e2e8f0"><th style="padding:5px;text-align:left;color:#94a3b8">日付</th><th style="padding:5px;text-align:left;color:#94a3b8">勘定科目</th><th style="padding:5px;text-align:left;color:#94a3b8">摘要</th><th style="padding:5px;text-align:right;color:#94a3b8">金額</th><th style="padding:5px;text-align:center;color:#94a3b8">状態</th></tr></thead>
+<tbody>
+<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:5px">04/01</td><td style="padding:5px">会議費</td><td style="padding:5px">スターバックス 佐藤</td><td style="padding:5px;text-align:right">¥580</td><td style="padding:5px;text-align:center"><span style="color:#16a34a;font-weight:600">済</span></td></tr>
+<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:5px">04/05</td><td style="padding:5px">消耗品費</td><td style="padding:5px">アスクル 鈴木</td><td style="padding:5px;text-align:right">¥12,800</td><td style="padding:5px;text-align:center"><span style="color:#16a34a;font-weight:600">済</span></td></tr>
+<tr style="background:#eff6ff;animation:fadeUp .4s ease"><td style="padding:5px;font-weight:600">04/08</td><td style="padding:5px;font-weight:600">旅費交通費</td><td style="padding:5px;font-weight:600">東京タクシー 田中</td><td style="padding:5px;text-align:right;font-weight:600">¥3,480</td><td style="padding:5px;text-align:center"><span style="color:#2563eb;font-weight:700">NEW</span></td></tr>
+</tbody></table>
+</div>
+<div style="text-align:center;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;max-width:440px;margin:16px auto 0">
+<div style="font-size:14px;font-weight:700;color:#16a34a;margin-bottom:4px">🎉 すべて完了！</div>
+<div style="font-size:11px;color:#64748b;line-height:1.7">チャットに写真を送ってから、ここまですべて自動。<br/>あなたがやったことは「写真を送る」と「はいを押す」だけです。</div>
+</div>
+<div style="text-align:center;margin-top:12px">
+<button onclick="demoReset()" style="background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;padding:8px 20px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;margin-right:6px">← もう一度体験</button>
+<a href="https://www.portament.jp/contact" style="display:inline-block;background:#2563eb;color:#fff;padding:8px 24px;border-radius:100px;font-size:11px;font-weight:600">導入について相談する</a>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;justify-content:center;gap:6px;padding:12px;background:#f8fafc;border-top:1px solid #e2e8f0">
+<div id="dd1" style="width:8px;height:8px;border-radius:50%;background:#2563eb;transition:all .3s"></div>
+<div id="dd2" style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;transition:all .3s"></div>
+<div id="dd3" style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;transition:all .3s"></div>
+<div id="dd4" style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;transition:all .3s"></div>
+<div id="dd5" style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;transition:all .3s"></div>
+</div>
+</div>
+</div>
+</div></section>
+
+<!-- 電子帳簿保存法 -->
+<section class="s s-bg" id="law"><div class="si">
+<div class="st">COMPLIANCE</div>
+<h2 class="sh">電子帳簿保存法に完全対応</h2>
+<p class="sd">2024年1月から義務化された電子取引データの保存要件を満たしています</p>
+
+<div class="law-box">
+<div class="law-badge">⚖ 電子帳簿保存法対応</div>
+<h3>紙の領収書、もう保管しなくて大丈夫です</h3>
+<p>オプス経費精算は、電子帳簿保存法が求める「検索要件」「真実性の確保」を自動で満たします。面倒な対応作業は一切不要です。</p>
+
+<div class="law-points">
+<div class="law-point"><div class="law-chk">✓</div><div class="law-point-text"><strong>検索要件の自動対応</strong>「年月日_取引先_金額」で自動リネーム。日付・金額・取引先で検索可能な状態を自動的に作ります。</div></div>
+<div class="law-point"><div class="law-chk">✓</div><div class="law-point-text"><strong>タイムスタンプ不要</strong>訂正・削除の履歴が残るクラウドストレージに保存するため、タイムスタンプの付与は不要です。</div></div>
+<div class="law-point"><div class="law-chk">✓</div><div class="law-point-text"><strong>すぐに紙を廃棄可能</strong>法的要件を満たした電子保存が自動で行われるため、紙の領収書はすぐに処分できます。</div></div>
+<div class="law-point"><div class="law-chk">✓</div><div class="law-point-text"><strong>一覧表も自動作成</strong>スプレッドシートに自動で一覧化されるため、税務調査時にもすぐに提出可能です。</div></div>
+</div>
+</div>
+</div></section>
+
+<!-- Supported Chat Tools -->
+<section class="s"><div class="si">
+<div class="st">COMPATIBILITY</div>
+<h2 class="sh">今お使いのチャットがそのまま使えます</h2>
+<p class="sd">新しいアプリのインストールは不要。いつものチャットに送るだけです</p>
+<div class="chat-logos">
+<div class="chat-logo"><div class="chat-box" style="color:#06c755">LINE</div><span>LINE</span></div>
+<div class="chat-logo"><div class="chat-box" style="color:#e83929">CW</div><span>Chatwork</span></div>
+<div class="chat-logo"><div class="chat-box" style="color:#4a154b">S</div><span>Slack</span></div>
+<div class="chat-logo"><div class="chat-box" style="color:#6264a7">T</div><span>Teams</span></div>
+</div>
+<div style="text-align:center;font-size:12px;color:#64748b;margin-top:8px">※ その他のチャットツールにも対応可能です。ご相談ください。</div>
+</div></section>
+
+<!-- Before/After Compare -->
+<section class="s s-bg" id="compare"><div class="si">
+<div class="st">COMPARISON</div>
+<h2 class="sh">従来の経費精算 vs オプス経費精算</h2>
+<table class="cmp">
+<thead><tr><th style="text-align:left">項目</th><th style="text-align:center">従来の経費精算</th><th style="text-align:center;color:#2563eb">オプス経費精算</th></tr></thead>
+<tbody>
+<tr><td style="font-weight:600">申請方法</td><td style="text-align:center;color:#dc2626">紙の申請書 or 専用システム</td><td style="text-align:center;color:#16a34a;font-weight:600">チャットに写真を送るだけ</td></tr>
+<tr><td style="font-weight:600">承認</td><td style="text-align:center">紙に押印 / メール確認</td><td style="text-align:center;font-weight:600">チャット上で「はい」を押すだけ</td></tr>
+<tr><td style="font-weight:600">データ入力</td><td style="text-align:center;color:#dc2626">1枚ずつ手入力</td><td style="text-align:center;color:#16a34a;font-weight:600">AIが自動読み取り</td></tr>
+<tr><td style="font-weight:600">領収書の保管</td><td style="text-align:center">紙をファイリング</td><td style="text-align:center;font-weight:600">クラウドに自動保管</td></tr>
+<tr><td style="font-weight:600">電子帳簿保存法</td><td style="text-align:center;color:#dc2626">手動で対応が必要</td><td style="text-align:center;color:#16a34a;font-weight:600">自動で対応済み</td></tr>
+<tr><td style="font-weight:600">会計ソフト連携</td><td style="text-align:center">手で転記</td><td style="text-align:center;font-weight:600">自動連携</td></tr>
+<tr><td style="font-weight:600">紙の廃棄</td><td style="text-align:center;color:#dc2626">7年間保管が必要</td><td style="text-align:center;color:#16a34a;font-weight:600">すぐに廃棄可能</td></tr>
+</tbody></table>
+</div></section>
+
+<!-- 立替金対応（補足） -->
+<section class="s"><div class="si">
+<div class="supp-card">
+<div class="supp-icon">💰</div>
+<div>
+<h3>立替経費の精算にも対応</h3>
+<p>領収書を送る際に「立替金」とメッセージを添えるだけで、自動的に立替精算として処理されます。通常の経費精算と同じフローで、承認・読み取り・一覧化・保管まですべて自動。立替金の集計も、スプレッドシート上で自動的に分類されます。</p>
+</div>
+</div>
+</div></section>
+
+<!-- FAQ -->
+<section class="s s-bg" id="faq"><div class="si">
+<div class="st">FAQ</div>
+<h2 class="sh">よくあるご質問</h2>
+<div style="margin-top:24px">
+<div class="faq-item"><div class="faq-q">今使っている会計ソフトと連携できますか？</div><div class="faq-a">はい。freee・マネーフォワード・弥生などのクラウド会計ソフトと連携可能です。オンプレミスの会計ソフトの場合はCSV出力で対応できます。</div></div>
+<div class="faq-item"><div class="faq-q">読み取りの精度はどのくらいですか？</div><div class="faq-a">AIによるOCR読み取りで、一般的な領収書であれば95%以上の精度で自動認識します。読み取り結果は一覧で確認・修正できるので安心です。</div></div>
+<div class="faq-item"><div class="faq-q">本当に紙の領収書を捨てて大丈夫ですか？</div><div class="faq-a">はい。電子帳簿保存法の要件を満たした電子保存が自動で行われるため、紙の原本は廃棄可能です。ファイル名の自動リネームにより検索要件も満たしています。</div></div>
+<div class="faq-item"><div class="faq-q">導入にどのくらい時間がかかりますか？</div><div class="faq-a">最短で即日から利用可能です。チャットツールとの接続設定を行えば、すぐにお使いいただけます。</div></div>
+<div class="faq-item"><div class="faq-q">社員が多くても使えますか？</div><div class="faq-a">はい。人数制限はありません。チャットツールを使える方であれば、誰でもすぐに利用できます。</div></div>
+<div class="faq-item"><div class="faq-q">セキュリティは大丈夫ですか？</div><div class="faq-a">通信はすべて暗号化されています。領収書データはお客様のクラウドストレージに保存されるため、外部にデータが流出するリスクはありません。</div></div>
+</div>
+</div></section>
+
+<!-- CTA -->
+<section class="s s-dark" style="padding-top:40px"><div class="si cta">
+<h2>経費精算を、もっとシンプルに。</h2>
+<p>領収書の写真を撮るだけ。あとは全部自動です。</p>
+<div style="margin-bottom:16px"><a href="https://www.portament.jp/contact" class="cta-btn">無料で相談する</a></div>
+</div></section>
+
+<footer>© 2026 オプス経費精算 by PORTAMENT Inc. × NewCrews</footer>
+
+<script>
+function switchStep(i){document.querySelectorAll('.step-tab').forEach((t,j)=>t.classList.toggle('active',j===i));document.querySelectorAll('.step-panel').forEach((p,j)=>p.classList.toggle('active',j===i))}
+
+// Demo mode (video / interactive)
+function switchDemoMode(mode) {
+  document.getElementById('panel-video').style.display = mode==='video' ? 'block' : 'none';
+  document.getElementById('panel-interactive').style.display = mode==='interactive' ? 'block' : 'none';
+  document.getElementById('dm-video').style.background = mode==='video' ? '#2563eb' : '#fff';
+  document.getElementById('dm-video').style.color = mode==='video' ? '#fff' : '#64748b';
+  document.getElementById('dm-video').style.borderColor = mode==='video' ? '#2563eb' : '#e2e8f0';
+  document.getElementById('dm-interactive').style.background = mode==='interactive' ? '#2563eb' : '#fff';
+  document.getElementById('dm-interactive').style.color = mode==='interactive' ? '#fff' : '#64748b';
+  document.getElementById('dm-interactive').style.borderColor = mode==='interactive' ? '#2563eb' : '#e2e8f0';
+  if(mode==='interactive') demoReset();
+}
+
+// Chat tool switching
+const chatStyles = {
+  line: { bg: '#06c755', name: 'LINE', label: 'LINE', frameBg: '#f0f2f5', bubbleBg: '#06c755' },
+  cw: { bg: '#e83929', name: 'CW', label: 'Chatwork', frameBg: '#f7f5f4', bubbleBg: '#e83929' },
+  slack: { bg: '#4a154b', name: 'S', label: 'Slack', frameBg: '#f8f8f8', bubbleBg: '#4a154b' }
+};
+let currentChat = 'line';
+
+function switchChat(tool) {
+  currentChat = tool;
+  const s = chatStyles[tool];
+  // Tab styling
+  ['line','cw','slack'].forEach(t => {
+    const el = document.getElementById('cs-'+t);
+    if(t===tool){ el.style.background=s.bg; el.style.color='#fff'; el.style.borderColor=s.bg; }
+    else { el.style.background='#fff'; el.style.color='#64748b'; el.style.borderColor='#e2e8f0'; }
+  });
+  // Chat UI
+  document.querySelectorAll('.chat-frame').forEach(f => f.style.background = s.frameBg);
+  const icons = [document.getElementById('chat-icon'), document.getElementById('chat-icon2')];
+  icons.forEach(i => { if(i){ i.style.background = s.bg; i.textContent = s.name; }});
+  const bubble = document.getElementById('chat-bubble');
+  if(bubble) bubble.style.background = s.bubbleBg;
+  demoReset();
+}
+
+function demoNext(step) {
+  document.querySelectorAll('.demo-s').forEach(s=>s.classList.remove('active'));
+  document.getElementById('demo-'+step).classList.add('active');
+  for(let i=1;i<=5;i++){document.getElementById('dd'+i).style.background=i<=step?'#2563eb':'#e2e8f0'}
+  if(step===3){
+    document.getElementById('demo-result3').style.display='none';
+    document.getElementById('demo-reading').style.display='block';
+    let p=0;const bar=document.getElementById('demo-pbar');
+    const iv=setInterval(()=>{p+=3;bar.style.width=p+'%';if(p>=100){clearInterval(iv);setTimeout(()=>{document.getElementById('demo-reading').style.display='none';document.getElementById('demo-result3').style.display='block'},300)}},30);
+  }
+}
+function demoReject(){document.querySelectorAll('.demo-s').forEach(s=>s.classList.remove('active'));document.getElementById('demo-reject').classList.add('active')}
+function demoReset(){document.querySelectorAll('.demo-s').forEach(s=>s.classList.remove('active'));document.getElementById('demo-1').classList.add('active');document.getElementById('demo-pbar').style.width='0%';for(let i=1;i<=5;i++){document.getElementById('dd'+i).style.background=i===1?'#2563eb':'#e2e8f0'}}
+</script>
+</body>
+</html>
